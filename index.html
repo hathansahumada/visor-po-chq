@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Visor PO · Fallas en vivo CHQ</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:sans-serif}
+body{background:#0E1937;color:#e8edf8;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.caja{background:#0a1228;border:1px solid #1e2f55;border-radius:12px;padding:32px 28px;width:100%;max-width:360px;text-align:center}
+h1{font-size:20px;margin-bottom:6px}
+p{font-size:13px;color:#7a8bb0;margin-bottom:20px}
+input[type=password]{width:100%;padding:11px 12px;border-radius:8px;border:1px solid #1e2f55;background:#0E1937;color:#e8edf8;font-size:15px;margin-bottom:12px}
+input[type=password]:focus{outline:none;border-color:#378ADD}
+label{display:flex;align-items:center;gap:8px;font-size:12px;color:#7a8bb0;margin-bottom:16px;justify-content:center;cursor:pointer}
+button{width:100%;padding:11px;border:none;border-radius:8px;background:#378ADD;color:#fff;font-size:15px;font-weight:600;cursor:pointer}
+button:disabled{opacity:.6;cursor:wait}
+.msg{font-size:13px;margin-top:14px;min-height:18px}
+.err{color:#f87171}
+</style></head>
+<body>
+<form class="caja" id="f" autocomplete="off">
+  <h1>Visor PO · Fallas en vivo CHQ</h1>
+  <p>Ingresa la clave para ver el visor</p>
+  <input type="password" id="clave" placeholder="Clave" autofocus>
+  <button id="btn">Entrar</button>
+  <div class="msg" id="msg"></div>
+</form>
+<script>
+(function(){
+  var SAL='1c3b364a0c823972d2d6c63819af8e97', ITER=250000, REFRESCO=3,LLAVE_LS='visorPO_llave_'+SAL;
+  var f=document.getElementById('f'), msg=document.getElementById('msg'), btn=document.getElementById('btn');
+  function hexABytes(h){var b=new Uint8Array(h.length/2);for(var i=0;i<b.length;i++)b[i]=parseInt(h.substr(i*2,2),16);return b;}
+  function bytesAHex(b){return Array.prototype.map.call(new Uint8Array(b),function(x){return('0'+x.toString(16)).slice(-2)}).join('');}
+  // La clave se recuerda solo mientras la pestaña siga abierta
+  try{localStorage.removeItem(LLAVE_LS)}catch(e){}
+  function guardar(v){try{sessionStorage.setItem(LLAVE_LS,v)}catch(e){}}
+  function leer(){try{return sessionStorage.getItem(LLAVE_LS)}catch(e){return null}}
+  function borrar(){try{sessionStorage.removeItem(LLAVE_LS)}catch(e){}}
+
+  // Se inyecta en el informe: recarga cada N min, recuerda pestaña y posición, mantiene la pantalla encendida
+  function mantener(min){
+    var K='visorPO_vista';
+    function wl(){try{if('wakeLock' in navigator&&document.visibilityState==='visible')navigator.wakeLock.request('screen').catch(function(){})}catch(e){}}
+    wl();document.addEventListener('visibilitychange',wl);(function(){function nv(){if(document.getElementById('nsv'))return;var v=document.createElement('video');v.id='nsv';v.muted=true;v.loop=true;v.autoplay=true;v.setAttribute('muted','');v.setAttribute('playsinline','');v.src='data:video/mp4;base64,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';v.style.cssText='position:fixed;left:0;top:0;width:100%;height:100%;object-fit:cover;opacity:0.01;pointer-events:none;z-index:2147483647';(document.body||document.documentElement).appendChild(v);ju(v)}function ju(v){var p=v.play();if(p&&p.catch)p.catch(function(){})}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',nv);else nv();setInterval(function(){var v=document.getElementById('nsv');if(!v)nv();else if(v.paused)ju(v)},30000)})();
+    function guardarVista(){try{var a=document.querySelector('.tab-btn.active');sessionStorage.setItem(K,JSON.stringify({tab:a?a.getAttribute('data-tab'):null,y:window.scrollY||0}))}catch(e){}}
+    document.addEventListener('click',function(e){if(e.target&&e.target.closest&&e.target.closest('.tab-btn'))setTimeout(guardarVista,0)},true);
+    var t=null;window.addEventListener('scroll',function(){clearTimeout(t);t=setTimeout(guardarVista,300)},{passive:true});
+    function restaurar(){
+      var v=null;try{v=JSON.parse(sessionStorage.getItem(K)||'null')}catch(e){}
+      if(!v)return;
+      if(v.tab){var b=document.querySelector('.tab-btn[data-tab="'+v.tab+'"]');if(b&&!b.classList.contains('active'))b.click();}
+      if(v.y)setTimeout(function(){window.scrollTo(0,v.y)},800);
+    }
+    if(document.readyState==='complete')setTimeout(restaurar,300);else window.addEventListener('load',function(){setTimeout(restaurar,300)});
+    setTimeout(function(){guardarVista();location.reload()},min*60000);
+  }
+
+  async function derivar(clave){
+    var base=await crypto.subtle.importKey('raw',new TextEncoder().encode(clave),'PBKDF2',false,['deriveBits']);
+    var bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:hexABytes(SAL),iterations:ITER,hash:'SHA-256'},base,256);
+    return bytesAHex(bits);
+  }
+  async function abrir(llaveHex){
+    var r=await fetch('datos.bin',{cache:'no-cache'});
+    if(!r.ok) throw new Error('descarga');
+    var buf=new Uint8Array(await r.arrayBuffer());
+    var key=await crypto.subtle.importKey('raw',hexABytes(llaveHex),'AES-GCM',false,['decrypt']);
+    var plano=await crypto.subtle.decrypt({name:'AES-GCM',iv:buf.slice(0,12)},key,buf.slice(12));
+    var html=await new Response(new Blob([plano]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+    // Quita la recarga propia del informe y agrega la nuestra (recuerda la pestaña)
+    html=html.replace(/<meta[^>]*http-equiv=["']?refresh["']?[^>]*>/gi,'');
+    var extra='<script>('+mantener.toString()+')('+REFRESCO+');<\/script>';
+    html=/<head[^>]*>/i.test(html)?html.replace(/<head[^>]*>/i,function(m){return m+extra}):extra+html;
+    document.open();document.write(html);document.close();(function(){var W=1900;function fx(){var ss=document.styleSheets;for(var i=0;i<ss.length;i++){var r;try{r=ss[i].cssRules}catch(e){continue}if(!r)continue;for(var j=r.length-1;j>=0;j--){var m=r[j];if(!m.media||!m.cssRules)continue;var t=m.media.mediaText;if(/max-width/.test(t)){ss[i].deleteRule(j)}else if(/min-width/.test(t)){var c=[];for(var k=0;k<m.cssRules.length;k++)c.push(m.cssRules[k].cssText);ss[i].deleteRule(j);for(var q=0;q<c.length;q++){try{ss[i].insertRule(c[q],ss[i].cssRules.length)}catch(e){}}}}}document.documentElement.style.zoom=Math.min(1,window.innerWidth/W)}fx();setTimeout(fx,300);setTimeout(fx,2000);window.onresize=fx})();
+  }
+  async function intentar(llaveHex,manual){
+    try{
+      await abrir(llaveHex);
+      if(manual) guardar(llaveHex);
+    }catch(e){
+      if(e&&e.message==='descarga'){msg.className='msg err';msg.textContent='No se pudo descargar el informe. Recarga la página.';}
+      else{ borrar(); msg.className='msg err'; msg.textContent=manual?'Clave incorrecta.':'La clave cambió. Ingrésala de nuevo.'; }
+      btn.disabled=false; f.style.display='';
+    }
+  }
+  var guardada=leer();
+  if(guardada){ f.style.display='none'; intentar(guardada,false); }
+  f.addEventListener('submit',async function(ev){
+    ev.preventDefault();
+    var c=document.getElementById('clave').value; if(!c) return;
+    btn.disabled=true; msg.className='msg'; msg.textContent='Abriendo informe...';
+    var llave=await derivar(c);
+    intentar(llave,true);
+  });
+})();
+</script>
+</body></html>
